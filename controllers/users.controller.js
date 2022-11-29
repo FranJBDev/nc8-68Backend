@@ -9,7 +9,7 @@ const createUser = async (data) => {
   encryptedPass = await bcrypt.hash(data.pass, 10)
   const newUser = await userModel.create({
     user: data.user,
-    pass: encryptedPasss,
+    pass: encryptedPass,
     // token: null,
   })
   // create token
