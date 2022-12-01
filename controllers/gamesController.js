@@ -1,14 +1,14 @@
-const axios = require('axios');
-const API_KEY = process.env.API_KEY; // '60fb2544d2e0470a9b1dd79552c621da'; //
-const baseUrl = 'https://api.rawg.io/api/';
+const axios = require('axios')
+const API_KEY = process.env.API_KEY // '60fb2544d2e0470a9b1dd79552c621da'; //
+const baseUrl = 'https://api.rawg.io/api/'
 
 // const options = '&search=walking dead&search_exact=true' //&dates=2019-09-01,2019-09-30&platforms=18,1,7';
 const getPrice = async (title) => {
   const data = await axios.get(
     'https://www.cheapshark.com/api/1.0/games?title=' + title + '&exact=1'
-  );
-  let price = data.data[0]?.cheapest;
-  if (!price) price = 19.99;
+  )
+  let price = data.data[0]?.cheapest
+  if (!price) price = 19.99
   //   const data2 = await axios.get(
   //     'https://www.cheapshark.com/api/1.0/games?id=' + gameId
   //   )
@@ -16,75 +16,80 @@ const getPrice = async (title) => {
   // } else {
   //   price = '19.99'
   // }
-  return price;
-};
+  return price
+}
 
 const games = async (req, res) => {
-  let { search, platforms, dates, page, ordering } = req.query; // falta order y price
+  let { search, platforms, dates, page, ordering } = req.query // falta order y price
 
   //   ordering
   // string
 
   // Available fields: name, released, added, created, updated, rating, metacritic. You can reverse the sort order adding a hyphen, for example: -released.
 
-  if (search) search = '&search=' + search + '&search_exact=true';
-  else search = '';
-  if (platforms) platforms = '&platforms=' + platforms;
-  else platforms = '';
-  if (dates) dates = '&dates=' + dates;
-  else dates = '&dates=2022-01-01,2022-12-31'; // del 01/01/2021 a la fecha son 332,147 juegos. del 01/01/2022 a la fecha son 158,949 juegos
-  if (page) page = '&page=' + page;
-  else page = '';
+  if (search) search = '&search=' + search + '&search_exact=true'
+  else search = ''
+  if (platforms) platforms = '&platforms=' + platforms
+  else platforms = ''
+  if (dates) dates = '&dates=' + dates
+  else dates = '&dates=2022-01-01,2022-12-31' // del 01/01/2021 a la fecha son 332,147 juegos. del 01/01/2022 a la fecha son 158,949 juegos
+  if (page) page = '&page=' + page // && typeof page == String
+  else page = ''
 
-  const options = search + platforms + dates + page;
-  const gamesUrl = baseUrl + 'games?key=' + API_KEY + options;
+  const options = search + platforms + dates + page
+  const gamesUrl = baseUrl + 'games?key=' + API_KEY + options
 
-  const resp = await axios.get(gamesUrl); // gamesUrl
-  const total = resp.data.count;
+  try {
+    const resp = await axios.get(gamesUrl) // gamesUrl
 
-  const pages = Math.ceil(total / 20);
-  const results = resp.data.results;
-  const games = [];
-  const prices = [];
+    const total = resp.data.count
 
-  // for (let i = 0; i < results.length; i++) {
-  //   const price = await getPrice(results[i].name)
-  //   prices.push(price)
-  // }
+    const pages = Math.ceil(total / 20)
+    const results = resp.data.results
+    const games = []
+    const prices = []
 
-  results.forEach((e, i) => {
-    if (e.platforms) {
-      let platforms = e.platforms.filter((p) => {
-        // Eliminamos las plataformas android, web y iOs
-        return (
-          p.platform.name !== 'Android' &&
-          p.platform.name !== 'iOS' &&
-          p.platform.name !== 'Web'
-        );
-      });
-      e.platforms = platforms;
-      e.platforms = e.platforms.map((p) => p.platform.name);
-    }
-    if (e.genres) e.genres = e.genres.map((g) => g.name);
-    if (e.esrb_rating) e.esrb_rating = e.esrb_rating.name;
+    // for (let i = 0; i < results.length; i++) {
+    //   const price = await getPrice(results[i].name)
+    //   prices.push(price)
+    // }
 
-    if (e.platforms.length > 0)
-      games.push({
-        price: prices[i],
-        id: e.id,
-        name: e.name,
-        background_image: e.background_image,
-        platforms: e.platforms,
-        categories: e.genres,
-        //   tags: e.tags,
-        released: e.released,
-        esrb: e.esrb_rating,
-        price: 99.99,
-        //   short_screenshots: e.short_screenshots
-      });
-  });
+    results.forEach((e, i) => {
+      if (e.platforms) {
+        let platforms = e.platforms.filter((p) => {
+          // Eliminamos las plataformas android, web y iOs
+          return (
+            p.platform.name !== 'Android' &&
+            p.platform.name !== 'iOS' &&
+            p.platform.name !== 'Web'
+          )
+        })
+        e.platforms = platforms
+        e.platforms = e.platforms.map((p) => p.platform.name)
+      }
+      if (e.genres) e.genres = e.genres.map((g) => g.name)
+      if (e.esrb_rating) e.esrb_rating = e.esrb_rating.name
 
-  res.json({ total, pages, games });
-};
+      if (e.platforms.length > 0)
+        games.push({
+          price: prices[i],
+          id: e.id,
+          name: e.name,
+          background_image: e.background_image,
+          platforms: e.platforms,
+          categories: e.genres,
+          //   tags: e.tags,
+          released: e.released,
+          esrb: e.esrb_rating,
+          price: 99.99,
+          //   short_screenshots: e.short_screenshots
+        })
+    })
 
-module.exports = games;
+    res.status(200).json({ total, pages, games })
+  } catch (err) {
+    res.status(400).json({ message: 'Gloria no lo tumbes' })
+  }
+}
+
+module.exports = games
